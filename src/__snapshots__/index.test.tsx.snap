@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`useIsOnline in browser should return false when it is not connected to the internet 1`] = `
+<Component>
+  <div />
+</Component>
+`;
+
+exports[`useIsOnline in browser should return true when it is connected to the internet 1`] = `
+<Component>
+  <div>
+    <Component />
+  </div>
+</Component>
+`;
