@@ -33,7 +33,6 @@ const BasicApp = () => {
 
   return (
     <Fragment>
-      {error ? <div> there's an error {error} </div> : null }
       {isOnline ? <div> We're online! </div> : <div> Uh-oh looks like you should connect to the internet </div>}
       {isOffline ? <div> We're offline! You can still post great cat photos! </div> : <div> We're not online. </div>}
     </Fragment>
