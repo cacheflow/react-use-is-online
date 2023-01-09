@@ -1,6 +1,6 @@
 {
 	"name": "react-use-is-online",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"description": "A React hook for detecting if you are online or offline.",
 	"main": "./lib/index.js",
 	"scripts": {
