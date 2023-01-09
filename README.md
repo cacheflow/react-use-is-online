@@ -5,14 +5,22 @@ Simple React Hook for checking if you're connected to the internet.
 Read about [Hooks](https://reactjs.org/docs/hooks-intro.html) feature.
 
 
-[![npm Version](https://img.shields.io/npm/v/react-use-is-online.svg)](https://www.npmjs.com/package/react-use-is-online) [![License](https://img.shields.io/npm/l/react-use-is-online.svg)](https://www.npmjs.com/package/react-use-is-online) [![Linux Build Status](https://travis-ci.com/cacheflow/react-use-is-online.svg?branch=master)](https://travis-ci.com/cacheflow/react-use-is-online) [![Bundle size](https://badgen.net/bundlephobia/min/react-use-is-online?label=size)](https://bundlephobia.com/result?p=react-use-is-online) [![Bundle size](https://badgen.net/bundlephobia/minzip/react-use-is-online?label=gzip%20size)](https://bundlephobia.com/result?p=react-use-is-online)
+[![npm Version](https://img.shields.io/npm/v/react-use-is-online.svg)](https://www.npmjs.com/package/react-use-is-online) [![License](https://img.shields.io/npm/l/react-use-is-online.svg)](https://www.npmjs.com/package/react-use-is-online) [![Linux Build Status](https://travis-ci.com/cacheflow/react-use-is-online.svg?branch=master)]
 
 
 ## Installation
 
+### Installing with Yarn 
 ```
-yarn add react-use-is-online --save 
+yarn add react-use-is-online
 ```
+
+#### Installing with NPM 
+
+```
+npm install react-use-is-online 
+```
+
 
 ## Demo 
 https://stackblitz.com/edit/react-use-is-online1
