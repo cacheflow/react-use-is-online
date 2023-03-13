@@ -1,6 +1,6 @@
 {
 	"name": "react-use-is-online",
-	"version": "1.2.1",
+	"version": "1.2.2",
 	"description": "A React hook for detecting if you are online or offline.",
 	"main": "./lib/index.js",
 	"scripts": {
@@ -53,7 +53,7 @@
 		"@types/react-dom": "^18.0.10",
 		"enzyme": "^3.10.0",
 		"enzyme-adapter-react-16": "^1.15.1",
-		"jest": "^29.3.1",
+		"jest": "^29.5.0",
 		"jsdom": "^20.0.0",
 		"jsdom-global": "3.0.2",
 		"prettier": "1.19.1",
