@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react';
 
-export interface IValues {
+export interface IsOnlineValues {
   error: null | string;
   isOffline: boolean;
   isOnline: boolean;
 }
 
-const NOT_BROWSER_ENV_ERROR =
+const MISSING_BROWSER_ERROR =
   'useIsOnline only works in a browser environment.';
 
-const notABrowserEnv = typeof window === 'undefined';
+const missingWindow = typeof window === 'undefined';
 
-const navigatorNotPresent = typeof navigator === 'undefined';
+const missingNavigator = typeof navigator === 'undefined';
 
-const useIsOnline = (): IValues => {
-  if (notABrowserEnv || navigatorNotPresent) {
+const useIsOnline = (): IsOnlineValues => {
+  if (missingWindow || missingNavigator) {
     return {
-      error: NOT_BROWSER_ENV_ERROR,
+      error: MISSING_BROWSER_ERROR,
       isOnline: false,
       isOffline: false,
     };
