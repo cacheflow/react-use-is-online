@@ -6,8 +6,8 @@ export interface IsOnlineValues {
   isOnline: boolean;
 }
 
-const MISSING_BROWSER_ERROR =
-  'useIsOnline only works in a browser environment.';
+const INCORRECT_ENV_ERROR =
+  "It looks like you're using 'useIsOnline' in an unsupported environment. This package only works in a browser environment.";
 
 const missingWindow = typeof window === 'undefined';
 
@@ -16,7 +16,7 @@ const missingNavigator = typeof navigator === 'undefined';
 const useIsOnline = (): IsOnlineValues => {
   if (missingWindow || missingNavigator) {
     return {
-      error: MISSING_BROWSER_ERROR,
+      error: INCORRECT_ENV_ERROR,
       isOnline: false,
       isOffline: false,
     };
