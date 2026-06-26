@@ -72,3 +72,38 @@ const AdvancedApp = () => {
 ```
 
 
+## Network Connection Details (v1.4.0+)
+
+`useIsOnline` returns a `connection` object containing properties from the [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API). 
+
+> **Note:** The `connection` object will be `null` in browsers that do not support it (e.g. Safari, Firefox) or in Server-Side Rendering (SSR) environments.
+
+```javascript
+import React from 'react';
+import { useIsOnline } from 'react-use-is-online';
+
+const NetworkSpeedApp = () => {
+  const { isOnline, connection } = useIsOnline();
+
+  if (!isOnline) {
+    return <div>You are currently offline.</div>;
+  }
+
+  return (
+    <div>
+      <p>Status: Online</p>
+      {connection ? (
+        <ul>
+          <li>Effective Type: {connection.effectiveType} (e.g., '4g')</li>
+          <li>Estimated Downlink: {connection.downlink} Mbps</li>
+          <li>Estimated RTT: {connection.rtt} ms</li>
+          <li>Data Saver Mode: {connection.saveData ? 'Enabled' : 'Disabled'}</li>
+          <li>Connection Type: {connection.type} (e.g., 'wifi')</li>
+        </ul>
+      ) : (
+        <p>Network information details not supported by this browser.</p>
+      )}
+    </div>
+  );
+};
+```
