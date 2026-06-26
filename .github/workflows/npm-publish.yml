@@ -1,6 +1,3 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
-
 name: Node.js Publish Package
 
 on:
@@ -12,22 +9,56 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm test
+          
+      - name: Enable Corepack
+        run: corepack enable
+        
+      - name: Install dependencies
+        run: yarn install
+        
+      - name: Run tests
+        run: yarn test
+        
+      - name: Build library
+        run: yarn build
+        
+      # 1. Save the compiled /lib folder so the next job can access it
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lib-dist
+          path: lib/
 
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
-      - run: npm publish
+          
+      - name: Enable Corepack
+        run: corepack enable
+        
+      - name: Install dependencies
+        run: yarn install
+        
+      # 2. Download the compiled /lib folder into this machine
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-dist
+          path: lib/
+
+      # 3. Publish the complete package
+      - name: Publish to npm
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_token}}
