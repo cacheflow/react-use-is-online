@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getConnection, missingWindow } from './getConnection';
 
 export type EffectiveConnectionType = 'slow-2g' | '2g' | '3g' | '4g';
 
@@ -27,37 +28,26 @@ export interface IsOnlineValues {
   connection: NetworkConnection | null;
 }
 
+interface NetworkInformation {
+  readonly effectiveType: "slow-2g" | "2g" | "3g" | "4g";
+  readonly downlink: number;
+  readonly rtt: number;
+  readonly saveData: boolean;
+
+  onchange: ((this: NetworkInformation, ev: Event) => any) | null;
+}
+
+interface Navigator {
+  connection?: NetworkInformation;
+}
+
 const INCORRECT_ENV_ERROR =
   "It looks like you're using 'useIsOnline' in an unsupported environment. This package only works in a browser environment.";
 
-const missingWindow = typeof window === 'undefined';
 
-const missingNavigator = typeof navigator === 'undefined';
-
-const getConnection = (): NetworkConnection | null => {
-  if (missingWindow || missingNavigator) {
-    return null;
-  }
-  const conn =
-    (window.navigator as any).connection ||
-    (window.navigator as any).mozConnection ||
-    (window.navigator as any).webkitConnection;
-
-  if (!conn) {
-    return null;
-  }
-
-  return {
-    downlink: conn.downlink,
-    effectiveType: conn.effectiveType,
-    rtt: conn.rtt,
-    saveData: conn.saveData,
-    type: conn.type,
-  };
-};
 
 const useIsOnline = (): IsOnlineValues => {
-  if (missingWindow || missingNavigator) {
+  if (missingWindow) {
     return {
       error: INCORRECT_ENV_ERROR,
       isOnline: false,
