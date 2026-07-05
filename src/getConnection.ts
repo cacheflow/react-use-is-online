@@ -93,10 +93,22 @@ function estimateDownlinkFromRtt(rtt: number): number {
   return 10;
 }
 
-export const getConnection = async (): Promise<ConnectionEstimate | null> => {
+export const getConnection = async (): Promise<NetworkConnection | null> => {
+  if (missingWindow) {
+    return null;
+  }
+
   if (!hasConnectionType()) {
     const connectionEst = await getConnectionEstimate();
-    return connectionEst;
+    return {
+      downlink: connectionEst.downlink ?? undefined,
+      effectiveType:
+        connectionEst.effectiveType === 'offline'
+          ? undefined
+          : (connectionEst.effectiveType as EffectiveConnectionType),
+      rtt: connectionEst.rtt ?? undefined,
+      saveData: connectionEst.saveData,
+    };
   }
 
   const conn =
@@ -106,10 +118,10 @@ export const getConnection = async (): Promise<ConnectionEstimate | null> => {
 
   if (!conn) {
     return {
-      downlink: conn?.downlink,
-      effectiveType: conn?.effectiveType,
-      rtt: conn?.rtt,
-      saveData: conn?.saveData,
+      downlink: undefined,
+      effectiveType: undefined,
+      rtt: undefined,
+      saveData: undefined,
     };
   }
 
@@ -118,5 +130,6 @@ export const getConnection = async (): Promise<ConnectionEstimate | null> => {
     effectiveType: conn?.effectiveType,
     rtt: conn?.rtt,
     saveData: conn?.saveData,
+    type: conn?.type,
   };
 };
