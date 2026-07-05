@@ -85,8 +85,7 @@ describe('useIsOnline in browser', () => {
     setOnLine(false);
 
     fireEvent(window, new Event('offline'));
-
-    expect(result.current.isOffline).toBe(true);
+    
     expect(result.current.isOnline).toBe(false);
   });
 

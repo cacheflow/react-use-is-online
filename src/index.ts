@@ -65,7 +65,7 @@ const useIsOnline = (): IsOnlineValues => {
 
     const toggleOnlineStatus = () => {
       if (active) {
-        
+        setOnlineStatus(window.navigator.onLine);
       }
     };
 
@@ -78,11 +78,7 @@ const useIsOnline = (): IsOnlineValues => {
 
     const setup = async () => {
       const currentConnection = await getConnection();
-      
-      if (!active) {
-        return;
-      }
-      
+      if (!active) return;
       setConnectionStatus(currentConnection);
 
       window.addEventListener('online', toggleOnlineStatus);
