@@ -3,7 +3,7 @@ module.exports = {
 	roots: [
 		'<rootDir>/src'
 	],
-	testEnvironment: 'node',
+	testEnvironment: 'jsdom',
 	transform: {
 		'^.+\\.tsx?$': 'ts-jest'
 	},
@@ -16,5 +16,4 @@ module.exports = {
 		'json',
 		'node'
 	],
-	setupFilesAfterEnv: ['<rootDir>/enzyme.config'],
 };

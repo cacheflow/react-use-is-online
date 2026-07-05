@@ -60,20 +60,35 @@ const useIsOnline = (): IsOnlineValues => {
   );
 
   useEffect(() => {
+    let active = true;
+    let conn: any = null;
+
+    const toggleOnlineStatus = () => {
+      if (active) {
+        
+      }
+    };
+
+    const toggleConnectionStatus = async () => {
+      const connStatus = await getConnection();
+      if (active) {
+        setConnectionStatus(connStatus);
+      }
+    };
+
     const setup = async () => {
       const currentConnection = await getConnection();
-      setConnectionStatus(currentConnection as NetworkConnection | null);
-
-      const toggleOnlineStatus = () => setOnlineStatus(window.navigator.onLine);
-      const toggleConnectionStatus = async () => {
-        const connStatus = await getConnection();
-        setConnectionStatus(connStatus as NetworkConnection | null);
-      };
+      
+      if (!active) {
+        return;
+      }
+      
+      setConnectionStatus(currentConnection);
 
       window.addEventListener('online', toggleOnlineStatus);
       window.addEventListener('offline', toggleOnlineStatus);
 
-      const conn =
+      conn =
         (window.navigator as any).connection ||
         (window.navigator as any).mozConnection ||
         (window.navigator as any).webkitConnection;
@@ -81,17 +96,18 @@ const useIsOnline = (): IsOnlineValues => {
       if (conn) {
         conn.addEventListener('change', toggleConnectionStatus);
       }
-
-      return () => {
-        window.removeEventListener('online', toggleOnlineStatus);
-        window.removeEventListener('offline', toggleOnlineStatus);
-        if (conn) {
-          conn.removeEventListener('change', toggleConnectionStatus);
-        }
-      };
     };
 
     setup();
+
+    return () => {
+      active = false;
+      window.removeEventListener('online', toggleOnlineStatus);
+      window.removeEventListener('offline', toggleOnlineStatus);
+      if (conn) {
+        conn.removeEventListener('change', toggleConnectionStatus);
+      }
+    };
   }, []);
 
   return {
