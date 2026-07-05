@@ -1,4 +1,3 @@
-
 export type EffectiveConnectionType = 'slow-2g' | '2g' | '3g' | '4g';
 
 export type ConnectionType =
@@ -19,14 +18,13 @@ export interface NetworkConnection {
   type?: ConnectionType;
 }
 
-
 export const missingWindow = typeof window === 'undefined';
 
 const hasConnectionType = () => {
-  return (window?.navigator as any)?.connection
-}
+  return (window?.navigator as any)?.connection;
+};
 
-type EffectiveType = "offline" | "slow-2g" | "2g" | "3g" | "4g";
+type EffectiveType = 'offline' | 'slow-2g' | '2g' | '3g' | '4g';
 
 type ConnectionEstimate = {
   effectiveType: EffectiveType;
@@ -41,8 +39,8 @@ export async function getConnectionEstimate(): Promise<ConnectionEstimate> {
   try {
     const start = performance.now();
     const response = await fetch(url, {
-      cache: "no-store",
-      mode: "no-cors",
+      cache: 'no-store',
+      mode: 'no-cors',
     });
 
     const end = performance.now();
@@ -54,10 +52,9 @@ export async function getConnectionEstimate(): Promise<ConnectionEstimate> {
       downlink: estimateDownlinkFromRtt(rtt),
       saveData: false,
     };
-  } 
-  catch {
+  } catch {
     return {
-      effectiveType: "offline",
+      effectiveType: 'offline',
       rtt: null,
       downlink: null,
       saveData: false,
@@ -67,17 +64,17 @@ export async function getConnectionEstimate(): Promise<ConnectionEstimate> {
 
 function classifyEffectiveType(rtt: number): EffectiveType {
   if (rtt > 2000) {
-    return "slow-2g";
+    return 'slow-2g';
   }
   if (rtt > 1400) {
-    return "2g";
-  }
-  
-  if (rtt > 300) {
-    return "3g";
+    return '2g';
   }
 
-  return "4g";
+  if (rtt > 300) {
+    return '3g';
+  }
+
+  return '4g';
 }
 
 function estimateDownlinkFromRtt(rtt: number): number {
@@ -98,8 +95,8 @@ function estimateDownlinkFromRtt(rtt: number): number {
 
 export const getConnection = async (): Promise<ConnectionEstimate | null> => {
   if (!hasConnectionType()) {
-    let res = await getConnectionEstimate();
-    return res;
+    const connectionEst = await getConnectionEstimate();
+    return connectionEst;
   }
 
   const conn =

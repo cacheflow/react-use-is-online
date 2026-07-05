@@ -1,6 +1,6 @@
 {
 	"name": "react-use-is-online",
-	"version": "1.4.0",
+	"version": "1.4.1",
 	"description": "A React hook for detecting if you are online or offline.",
 	"main": "./lib/index.js",
 	"scripts": {
@@ -62,7 +62,7 @@
 		"react-dom": "^16.12.0",
 		"ts-jest": "^29.0.3",
 		"tslint-config-prettier": "^1.18.0",
-		"typescript": "^4.3.0"
+		"typescript": "^4.9.5"
 	},
 	"peerDependencies": {
 		"react": ">=16.8.0",

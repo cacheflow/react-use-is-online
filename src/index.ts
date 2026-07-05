@@ -29,7 +29,7 @@ export interface IsOnlineValues {
 }
 
 interface NetworkInformation {
-  readonly effectiveType: "slow-2g" | "2g" | "3g" | "4g";
+  readonly effectiveType: 'slow-2g' | '2g' | '3g' | '4g';
   readonly downlink: number;
   readonly rtt: number;
   readonly saveData: boolean;
@@ -44,8 +44,6 @@ interface Navigator {
 const INCORRECT_ENV_ERROR =
   "It looks like you're using 'useIsOnline' in an unsupported environment. This package only works in a browser environment.";
 
-
-
 const useIsOnline = (): IsOnlineValues => {
   if (missingWindow) {
     return {
@@ -57,31 +55,43 @@ const useIsOnline = (): IsOnlineValues => {
   }
 
   const [isOnline, setOnlineStatus] = useState(window.navigator.onLine);
-  const [connection, setConnectionStatus] = useState<NetworkConnection | null>(getConnection());
+  const [connection, setConnectionStatus] = useState<NetworkConnection | null>(
+    null
+  );
 
   useEffect(() => {
-    const toggleOnlineStatus = () => setOnlineStatus(window.navigator.onLine);
-    const toggleConnectionStatus = () => setConnectionStatus(getConnection());
+    const setup = async () => {
+      const currentConnection = await getConnection();
+      setConnectionStatus(currentConnection as NetworkConnection | null);
 
-    window.addEventListener('online', toggleOnlineStatus);
-    window.addEventListener('offline', toggleOnlineStatus);
+      const toggleOnlineStatus = () => setOnlineStatus(window.navigator.onLine);
+      const toggleConnectionStatus = async () => {
+        const connStatus = await getConnection();
+        setConnectionStatus(connStatus as NetworkConnection | null);
+      };
 
-    const conn =
-      (window.navigator as any).connection ||
-      (window.navigator as any).mozConnection ||
-      (window.navigator as any).webkitConnection;
+      window.addEventListener('online', toggleOnlineStatus);
+      window.addEventListener('offline', toggleOnlineStatus);
 
-    if (conn) {
-      conn.addEventListener('change', toggleConnectionStatus);
-    }
+      const conn =
+        (window.navigator as any).connection ||
+        (window.navigator as any).mozConnection ||
+        (window.navigator as any).webkitConnection;
 
-    return () => {
-      window.removeEventListener('online', toggleOnlineStatus);
-      window.removeEventListener('offline', toggleOnlineStatus);
       if (conn) {
-        conn.removeEventListener('change', toggleConnectionStatus);
+        conn.addEventListener('change', toggleConnectionStatus);
       }
+
+      return () => {
+        window.removeEventListener('online', toggleOnlineStatus);
+        window.removeEventListener('offline', toggleOnlineStatus);
+        if (conn) {
+          conn.removeEventListener('change', toggleConnectionStatus);
+        }
+      };
     };
+
+    setup();
   }, []);
 
   return {
