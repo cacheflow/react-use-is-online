@@ -45,7 +45,9 @@
 	},
 	"homepage": "https://github.com/cacheflow/react-use-is-online#readme",
 	"resolutions": {
-		"minimist": "^1.2.6"
+		"minimist": "^1.2.6",
+		"minimatch ": "^3.1.2",
+		"ansi-regex ": "^4.1.1"
 	},
 	"devDependencies": {
 		"@testing-library/react": "^14.0.0",
@@ -71,6 +73,7 @@
 	"typings": "./lib/index.d.ts",
 	"dependencies": {
 		"enzyme": "^3.11.0",
-		"enzyme-to-json": "^3.4.4"
+		"enzyme-to-json": "^3.4.4",
+		"react-use-is-online": "^1.4.3"
 	}
 }
