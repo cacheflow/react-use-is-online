@@ -1,259 +1,194 @@
-import { renderHook, waitFor, fireEvent } from '@testing-library/react';
+import { renderHook, fireEvent, act, waitFor } from '@testing-library/react';
 import { useIsOnline } from './index';
+import { getConnection, getConnectionEstimate } from './getConnection';
 
-if (!global.fetch) {
-  global.fetch = (() => Promise.resolve({} as Response)) as any;
-}
+const setNavigator = (key: string, value: unknown) => {
+  Object.defineProperty(window.navigator, key, { configurable: true, value });
+};
 
-describe('useIsOnline in browser', () => {
-  let mockFetch: jest.SpyInstance;
-  let mockPerformanceNow: jest.SpyInstance;
-
-  const setOnLine = (onLine: boolean) => {
-    Object.defineProperty(window.navigator, 'onLine', {
-      configurable: true,
-      value: onLine,
-    });
-  };
-
-  const setConnection = (connection: any) => {
-    Object.defineProperty(window.navigator, 'connection', {
-      configurable: true,
-      value: connection,
-    });
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    setOnLine(true);
-    setConnection(undefined);
-
-    // Mock fetch to simulate getConnectionEstimate calls
-    mockFetch = jest.spyOn(global, 'fetch').mockImplementation(() =>
-      Promise.resolve({
-        status: 204,
-        ok: true,
-      } as Response)
-    );
-
-    // Mock performance.now to simulate deterministic latency
-    let perfTime = 1000;
-    mockPerformanceNow = jest
-      .spyOn(performance, 'now')
-      .mockImplementation(() => {
-        const current = perfTime;
-        perfTime += 100; // default 100ms diff
-        return current;
-      });
+const createConnection = () =>
+  Object.assign(new EventTarget(), {
+    downlink: 10,
+    effectiveType: '4g',
+    rtt: 50,
+    saveData: false,
+    type: 'wifi',
   });
 
+describe('useIsOnline', () => {
+  const originalFetch = global.fetch;
+  beforeEach(() => {
+    setNavigator('onLine', true);
+    for (const key of ['connection', 'mozConnection', 'webkitConnection']) {
+      setNavigator(key, undefined);
+    }
+    // A pending fetch must never delay connectivity subscriptions.
+    global.fetch = jest.fn(() => new Promise<Response>(() => {}));
+  });
   afterEach(() => {
-    mockFetch.mockRestore();
-    mockPerformanceNow.mockRestore();
+    global.fetch = originalFetch;
+    jest.restoreAllMocks();
   });
 
-  it('should return true when it is connected to the internet', async () => {
-    setOnLine(true);
+  it('returns browser status immediately while the fallback probe is pending', async () => {
     const { result } = renderHook(() => useIsOnline());
-    await waitFor(() => {
-      expect(result.current.connection).not.toBeNull();
+    expect(result.current).toEqual({
+      isOnline: true,
+      isOffline: false,
+      connection: null,
+      error: null,
     });
-    expect(result.current.isOnline).toBe(true);
-    expect(result.current.isOffline).toBe(false);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('should return false when it is not connected to the internet', async () => {
-    setOnLine(false);
+  it('initializes offline and handles immediate online/offline transitions', () => {
+    setNavigator('onLine', false);
     const { result } = renderHook(() => useIsOnline());
-    await waitFor(() => {
-      expect(result.current.connection).not.toBeNull();
-    });
     expect(result.current.isOffline).toBe(true);
-    expect(result.current.isOnline).toBe(false);
-  });
-
-  it('should update isOffline when it becomes disconnected from the internet', async () => {
-    setOnLine(true);
-    const { result } = renderHook(() => useIsOnline());
-
-    await waitFor(() => {
-      expect(result.current.connection).not.toBeNull();
-    });
-
-    expect(result.current.isOffline).toBe(false);
-
-    setOnLine(false);
-
-    fireEvent(window, new Event('offline'));
-    
-    expect(result.current.isOnline).toBe(false);
-  });
-
-  it('should update isOnline when it becomes re-connected to the internet', async () => {
-    setOnLine(false);
-    const { result } = renderHook(() => useIsOnline());
-
-    await waitFor(() => {
-      expect(result.current.connection).not.toBeNull();
-    });
-
-    expect(result.current.isOnline).toBe(false);
-
-    setOnLine(true);
-
+    setNavigator('onLine', true);
     fireEvent(window, new Event('online'));
-
     expect(result.current.isOnline).toBe(true);
     expect(result.current.isOffline).toBe(false);
-  });
-
-  it('should register and clean up window event listeners', async () => {
-    const addSpy = jest.spyOn(window, 'addEventListener');
-    const removeSpy = jest.spyOn(window, 'removeEventListener');
-
-    const { unmount, result } = renderHook(() => useIsOnline());
-
-    await waitFor(() => {
-      expect(result.current.connection).not.toBeNull();
-    });
-
-    expect(addSpy).toHaveBeenCalledWith('online', expect.any(Function));
-    expect(addSpy).toHaveBeenCalledWith('offline', expect.any(Function));
-
-    unmount();
-
-    expect(removeSpy).toHaveBeenCalledWith('online', expect.any(Function));
-    expect(removeSpy).toHaveBeenCalledWith('offline', expect.any(Function));
-
-    addSpy.mockRestore();
-    removeSpy.mockRestore();
-  });
-
-  it('should return connection details when connection API is supported', async () => {
-    const mockConnection = new EventTarget() as any;
-    mockConnection.downlink = 10;
-    mockConnection.effectiveType = '4g';
-    mockConnection.rtt = 50;
-    mockConnection.saveData = false;
-    mockConnection.type = 'wifi';
-
-    setConnection(mockConnection);
-
-    const { result } = renderHook(() => useIsOnline());
-
-    await waitFor(() => {
-      expect(result.current.connection).toEqual(
-        expect.objectContaining({
-          effectiveType: '4g',
-          downlink: 10,
-          type: 'wifi',
-        })
-      );
-    });
-  });
-
-  it('should update connection details when change event is fired', async () => {
-    const mockConnection = new EventTarget() as any;
-    mockConnection.downlink = 10;
-    mockConnection.effectiveType = '4g';
-    mockConnection.rtt = 50;
-    mockConnection.saveData = false;
-    mockConnection.type = 'wifi';
-
-    setConnection(mockConnection);
-
-    const { result } = renderHook(() => useIsOnline());
-
-    await waitFor(() => {
-      expect(result.current.connection?.effectiveType).toBe('4g');
-    });
-
-    mockConnection.effectiveType = '4g';
-    mockConnection.downlink = 10;
-
-    fireEvent(window, new Event('change'));
-
-    await waitFor(() => {
-      expect(result.current.connection?.effectiveType).toBe('4g');
-      expect(result.current.connection?.downlink).toBe(10);
-    });
-  });
-
-  it('should return fallback connection estimate when connection API is not supported', async () => {
-    setConnection(undefined);
-
-    const { result } = renderHook(() => useIsOnline());
-
-    await waitFor(() => {
-      expect(result.current.connection).toEqual(
-        expect.objectContaining({
-          effectiveType: '4g',
-          downlink: 10,
-        })
-      );
-    });
-  });
-
-  it('should return offline connection estimate when fetch fails', async () => {
-    setConnection(undefined);
-    mockFetch.mockRejectedValueOnce(new Error('Network error'));
-
-    const { result } = renderHook(() => useIsOnline());
-
-    await waitFor(() => {
-      expect(result.current.connection).toEqual(
-        expect.objectContaining({
-          effectiveType: undefined,
-          rtt: undefined,
-          downlink: undefined,
-        })
-      );
-    });
-  });
-
-  it('should classify connection based on latency correctly', async () => {
-    setConnection(undefined);
-
-    // Test slow-2g classification: RTT > 2000
-    let perfTime = 1000;
-    mockPerformanceNow.mockImplementation(() => {
-      const current = perfTime;
-      perfTime += 2500;
-      return current;
-    });
-
-    const { result } = renderHook(() => useIsOnline());
-
-    await waitFor(() => {
-      expect(result.current.connection).toEqual(
-        expect.objectContaining({
-          effectiveType: 'slow-2g',
-          downlink: 0.05,
-        })
-      );
-    });
-  });
-});
-
-describe('useIsOnline in non-browser environment', () => {
-  beforeEach(() => {
-    jest.resetModules();
-  });
-
-  it('should default states when window is missing', () => {
-    jest.mock('./getConnection', () => ({
-      missingWindow: true,
-      getConnection: jest.fn(),
-    }));
-
-    const { useIsOnline: useIsOnlineMock } = require('./index');
-    const { result } = renderHook(() => useIsOnlineMock());
-
-    expect(result.current.error).toContain(
-      'only works in a browser environment'
-    );
+    setNavigator('onLine', false);
+    fireEvent(window, new Event('offline'));
     expect(result.current.isOnline).toBe(false);
-    expect(result.current.isOffline).toBe(false);
+    expect(result.current.isOffline).toBe(true);
+  });
+
+  it.each(['connection', 'mozConnection', 'webkitConnection'])(
+    'reads and updates %s on the connection object',
+    async (key) => {
+      const conn = createConnection();
+      setNavigator(key, conn);
+      const { result } = renderHook(() => useIsOnline());
+      await waitFor(() => expect(result.current.connection).not.toBeNull());
+      expect(result.current.connection).toEqual({
+        downlink: 10,
+        effectiveType: '4g',
+        rtt: 50,
+        saveData: false,
+        type: 'wifi',
+      });
+      conn.downlink = 1.5;
+      conn.effectiveType = '3g';
+      conn.saveData = true;
+      await act(async () => {
+        conn.dispatchEvent(new Event('change'));
+      });
+      expect(result.current.connection).toEqual(
+        expect.objectContaining({
+          downlink: 1.5,
+          effectiveType: '3g',
+          saveData: true,
+        })
+      );
+      expect(await getConnection()).toEqual(result.current.connection);
+      expect(global.fetch).not.toHaveBeenCalled();
+    }
+  );
+
+  it('supports partial information without inventing measurements', async () => {
+    setNavigator('connection', { saveData: true });
+    const { result } = renderHook(() => useIsOnline());
+    await waitFor(() => expect(result.current.connection).not.toBeNull());
+    expect(result.current.connection).toEqual({
+      downlink: undefined,
+      effectiveType: undefined,
+      rtt: undefined,
+      saveData: true,
+      type: undefined,
+    });
+  });
+
+  it('removes the exact subscribed window and connection listeners', () => {
+    const conn = createConnection();
+    setNavigator('connection', conn);
+    const addWindow = jest.spyOn(window, 'addEventListener');
+    const removeWindow = jest.spyOn(window, 'removeEventListener');
+    const addConnection = jest.spyOn(conn, 'addEventListener');
+    const removeConnection = jest.spyOn(conn, 'removeEventListener');
+    const { unmount } = renderHook(() => useIsOnline());
+    unmount();
+    for (const event of ['online', 'offline']) {
+      const subscription = addWindow.mock.calls.find(
+        ([type]) => type === event
+      );
+      expect(subscription).toBeDefined();
+      expect(removeWindow).toHaveBeenCalledWith(event, subscription![1]);
+    }
+    expect(addConnection).toHaveBeenCalledWith('change', expect.any(Function));
+    expect(removeConnection).toHaveBeenCalledWith(
+      'change',
+      addConnection.mock.calls[0][1]
+    );
+  });
+  it.each([
+    [100, '4g', 10],
+    [500, '3g', 1.5],
+    [1500, '2g', 0.25],
+    [2500, 'slow-2g', 0.05],
+  ])(
+    'restores estimates for %sms probes',
+    async (latency, effectiveType, downlink) => {
+      global.fetch = jest.fn().mockResolvedValue({});
+      jest
+        .spyOn(performance, 'now')
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(latency as number);
+      expect(await getConnectionEstimate()).toEqual({
+        effectiveType,
+        downlink,
+        rtt: latency,
+        saveData: false,
+      });
+    }
+  );
+
+  it('populates hook connection details using the fallback', async () => {
+    let now = 0;
+    jest.spyOn(performance, 'now').mockImplementation(() => now);
+    global.fetch = jest.fn().mockImplementation(() => {
+      now = 500;
+      return Promise.resolve({});
+    });
+    const { result } = renderHook(() => useIsOnline());
+    await waitFor(() =>
+      expect(result.current.connection).toEqual({
+        effectiveType: '3g',
+        downlink: 1.5,
+        rtt: 500,
+        saveData: false,
+      })
+    );
+  });
+
+  it('preserves browser online status when a fallback probe fails', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    const { result } = renderHook(() => useIsOnline());
+    await waitFor(() =>
+      expect(result.current.connection).toEqual({
+        effectiveType: undefined,
+        downlink: undefined,
+        rtt: undefined,
+        saveData: false,
+      })
+    );
+    expect(result.current.isOnline).toBe(true);
+  });
+
+  it('ignores a fallback result after unmounting', async () => {
+    let resolveProbe!: (response: Response) => void;
+    global.fetch = jest.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveProbe = resolve;
+        })
+    );
+    const { result, unmount } = renderHook(() => useIsOnline());
+    unmount();
+    await act(async () => {
+      resolveProbe({} as Response);
+    });
     expect(result.current.connection).toBeNull();
   });
 });

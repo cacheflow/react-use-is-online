@@ -8,6 +8,12 @@ export interface NetworkConnection {
     type?: ConnectionType;
 }
 export declare const missingWindow: boolean;
+interface NetworkInformation extends NetworkConnection {
+    addEventListener?: (type: string, listener: () => void) => void;
+    removeEventListener?: (type: string, listener: () => void) => void;
+}
+export declare const getNetworkInformation: () => NetworkInformation | null;
+export declare const readConnection: () => NetworkConnection | null;
 type EffectiveType = 'offline' | 'slow-2g' | '2g' | '3g' | '4g';
 type ConnectionEstimate = {
     effectiveType: EffectiveType;

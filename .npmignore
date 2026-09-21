@@ -4,3 +4,5 @@ src
 tsconfig.json
 *.test.tsx
 .travis.yml
+lib/*.test.js
+lib/*.test.d.ts
