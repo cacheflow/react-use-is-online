@@ -1,6 +1,6 @@
 # use-is-online
 
-Simple React Hook for checking if you're connected to the internet.
+Simple React Hook for observing the browser's online/offline status.
 
 Read about [Hooks](https://reactjs.org/docs/hooks-intro.html) feature.
 
@@ -76,7 +76,7 @@ const AdvancedApp = () => {
 
 `useIsOnline` returns a `connection` object containing properties from the [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API). 
 
-> **Note:** The `connection` object will be `null` in browsers that do not support it (e.g. Safari, Firefox) or in Server-Side Rendering (SSR) environments.
+> **Note:** When the Network Information API is unavailable, the hook falls back to request-timing estimates of effective connection type, RTT, and downlink. `connection` is `null` while details are loading and during server rendering.
 
 ```javascript
 import React from 'react';
@@ -107,3 +107,27 @@ const NetworkSpeedApp = () => {
   );
 };
 ```
+
+## Connectivity behavior
+
+Online status reflects `navigator.onLine`; it is a browser signal, not a guarantee
+that the internet or your backend is reachable. Use it for connectivity hints,
+and handle request failures independently.
+
+Connection details use the browser's Network Information API when available,
+including prefixed implementations. Otherwise, `getConnectionEstimate()` times a
+request to Google's `generate_204` endpoint and uses the existing latency thresholds
+to estimate effective connection type and downlink. These are approximate estimates.
+The fallback returns `saveData: false` and does not identify a physical connection
+type such as Wi-Fi. Failed probes leave RTT, downlink, and effective type undefined
+in the hook's connection object; online status still follows `navigator.onLine`.
+
+During server rendering, both status booleans are `false`, `connection` is `null`,
+and `error` describes the browser-only environment. This fallback prevents access
+to browser globals; it does not guarantee identical server and client markup.
+
+
+- Register connectivity listeners synchronously and refresh status after subscribing.
+- Preserve `getConnectionEstimate` and automatic connection estimates when network
+  information is unavailable, without delaying online/offline subscriptions.
+- Fix connection change coverage and remove unused Enzyme production dependencies.
