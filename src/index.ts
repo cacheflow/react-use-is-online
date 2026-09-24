@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getConnection, missingWindow } from './getConnection';
+import { getNetworkInformation, getConnection } from './getConnection';
 
 export type EffectiveConnectionType = 'slow-2g' | '2g' | '3g' | '4g';
 
@@ -28,87 +28,49 @@ export interface IsOnlineValues {
   connection: NetworkConnection | null;
 }
 
-interface NetworkInformation {
-  readonly effectiveType: 'slow-2g' | '2g' | '3g' | '4g';
-  readonly downlink: number;
-  readonly rtt: number;
-  readonly saveData: boolean;
-
-  onchange: ((this: NetworkInformation, ev: Event) => any) | null;
-}
-
-interface Navigator {
-  connection?: NetworkInformation;
-}
-
 const INCORRECT_ENV_ERROR =
   "It looks like you're using 'useIsOnline' in an unsupported environment. This package only works in a browser environment.";
 
 const useIsOnline = (): IsOnlineValues => {
-  if (missingWindow) {
-    return {
-      error: INCORRECT_ENV_ERROR,
-      isOnline: false,
-      isOffline: false,
-      connection: null,
-    };
-  }
-
-  const [isOnline, setOnlineStatus] = useState(window.navigator.onLine);
+  const missingWindow = typeof window === 'undefined';
+  const [isOnline, setOnlineStatus] = useState(() =>
+    missingWindow ? false : window.navigator.onLine
+  );
   const [connection, setConnectionStatus] = useState<NetworkConnection | null>(
     null
   );
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return void 0;
+    }
+    const toggleOnlineStatus = () => setOnlineStatus(window.navigator.onLine);
     let active = true;
-    let conn: any = null;
-
-    const toggleOnlineStatus = () => {
-      if (active) {
-        setOnlineStatus(window.navigator.onLine);
-      }
-    };
-
     const toggleConnectionStatus = async () => {
-      const connStatus = await getConnection();
-      if (active) {
-        setConnectionStatus(connStatus);
-      }
+      const connection = await getConnection();
+      if (active) setConnectionStatus(connection);
     };
+    const conn = getNetworkInformation();
 
-    const setup = async () => {
-      const currentConnection = await getConnection();
-      if (!active) return;
-      setConnectionStatus(currentConnection);
+    window.addEventListener('online', toggleOnlineStatus);
+    window.addEventListener('offline', toggleOnlineStatus);
+    conn?.addEventListener?.('change', toggleConnectionStatus);
 
-      window.addEventListener('online', toggleOnlineStatus);
-      window.addEventListener('offline', toggleOnlineStatus);
-
-      conn =
-        (window.navigator as any).connection ||
-        (window.navigator as any).mozConnection ||
-        (window.navigator as any).webkitConnection;
-
-      if (conn) {
-        conn.addEventListener('change', toggleConnectionStatus);
-      }
-    };
-
-    setup();
+    // Subscribe before reading so changes during mounting cannot be missed.
+    toggleOnlineStatus();
+    toggleConnectionStatus();
 
     return () => {
       active = false;
       window.removeEventListener('online', toggleOnlineStatus);
       window.removeEventListener('offline', toggleOnlineStatus);
-      if (conn) {
-        conn.removeEventListener('change', toggleConnectionStatus);
-      }
+      conn?.removeEventListener?.('change', toggleConnectionStatus);
     };
   }, []);
 
   return {
-    error: null,
-    isOffline: !isOnline,
+    error: missingWindow ? INCORRECT_ENV_ERROR : null,
+    isOffline: missingWindow ? false : !isOnline,
     isOnline,
     connection,
   };

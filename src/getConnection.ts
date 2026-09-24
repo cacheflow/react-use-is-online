@@ -20,8 +20,42 @@ export interface NetworkConnection {
 
 export const missingWindow = typeof window === 'undefined';
 
-const hasConnectionType = () => {
-  return (window?.navigator as any)?.connection;
+interface NetworkInformation extends NetworkConnection {
+  addEventListener?: (type: string, listener: () => void) => void;
+  removeEventListener?: (type: string, listener: () => void) => void;
+}
+
+type NetworkNavigator = Navigator & {
+  connection?: NetworkInformation;
+  mozConnection?: NetworkInformation;
+  webkitConnection?: NetworkInformation;
+};
+
+export const getNetworkInformation = (): NetworkInformation | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const navigator = window.navigator as NetworkNavigator;
+  return (
+    navigator.connection ||
+    navigator.mozConnection ||
+    navigator.webkitConnection ||
+    null
+  );
+};
+
+export const readConnection = (): NetworkConnection | null => {
+  const conn = getNetworkInformation();
+  if (!conn) {
+    return null;
+  }
+  return {
+    downlink: conn.downlink,
+    effectiveType: conn.effectiveType,
+    rtt: conn.rtt,
+    saveData: conn.saveData,
+    type: conn.type,
+  };
 };
 
 type EffectiveType = 'offline' | 'slow-2g' | '2g' | '3g' | '4g';
@@ -94,42 +128,18 @@ function estimateDownlinkFromRtt(rtt: number): number {
 }
 
 export const getConnection = async (): Promise<NetworkConnection | null> => {
-  if (missingWindow) {
+  if (typeof window === 'undefined') {
     return null;
   }
+  const connection = readConnection();
+  if (connection) return connection;
 
-  if (!hasConnectionType()) {
-    const connectionEst = await getConnectionEstimate();
-    return {
-      downlink: connectionEst.downlink ?? undefined,
-      effectiveType:
-        connectionEst.effectiveType === 'offline'
-          ? undefined
-          : (connectionEst.effectiveType as EffectiveConnectionType),
-      rtt: connectionEst.rtt ?? undefined,
-      saveData: connectionEst.saveData,
-    };
-  }
-
-  const conn =
-    (window?.navigator as any)?.connection ||
-    (window?.navigator as any)?.mozConnection ||
-    (window?.navigator as any)?.webkitConnection;
-
-  if (!conn) {
-    return {
-      downlink: undefined,
-      effectiveType: undefined,
-      rtt: undefined,
-      saveData: undefined,
-    };
-  }
-
+  const estimate = await getConnectionEstimate();
   return {
-    downlink: conn?.downlink,
-    effectiveType: conn?.effectiveType,
-    rtt: conn?.rtt,
-    saveData: conn?.saveData,
-    type: conn?.type,
+    downlink: estimate.downlink ?? undefined,
+    effectiveType:
+      estimate.effectiveType === 'offline' ? undefined : estimate.effectiveType,
+    rtt: estimate.rtt ?? undefined,
+    saveData: estimate.saveData,
   };
 };
