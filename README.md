@@ -131,3 +131,13 @@ to browser globals; it does not guarantee identical server and client markup.
 - Preserve `getConnectionEstimate` and automatic connection estimates when network
   information is unavailable, without delaying online/offline subscriptions.
 - Fix connection change coverage and remove unused Enzyme production dependencies.
+
+## Working with coding agents
+
+Repository guidance lives in [AGENTS.md](AGENTS.md). Task-specific skills are
+available in [.agents/skills](.agents/skills):
+
+- [Maintain the online hook](.agents/skills/maintain-online-hook/SKILL.md): connectivity behavior, subscriptions, network estimates, and SSR.
+- [Verify the hook package](.agents/skills/verify-hook-package/SKILL.md): builds, declarations, and npm package contents.
+
+These are repository-local instructions; no external service setup is required.
